@@ -35,8 +35,8 @@ jobs:
 
       - name: Push changes to Repo B
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git # GitHubトークンを使ってリモートリポジトリBのURLを設定
-          git push origin $BRANCH_NAME  # リモートリポジトリBに新しいブランチをプッシュ
+          git remote set-url origin https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git
+          git push origin $BRANCH_NAME
 
       - name: Create Pull Request in Repo B
         run: |
