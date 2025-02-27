@@ -15,7 +15,7 @@ jobs:
 
       - name: Set up Git
         run: |
-          git config user.name "GitHub Actions"  # GitHub Actions用のユーザー名を設定
+          git config user.name "GitHub Actions CR"  # GitHub Actions用のユーザー名を設定
           git config user.email "akinobu@fork.co.jp"  # GitHub Actions用のメールアドレスを設定
 
       - name: Clone Repo B
