@@ -21,7 +21,7 @@ jobs:
       - name: Clone Repo B
         uses: actions/checkout@v3
         with:
-          repository: <リポジトリBのオーナー>/<リポジトリBの名前>
+          repository: fork-akinobu/github-actions-test-2
           path: repositoryB
           token: ${{ secrets.REPO_B_TOKEN }} # PAT または SSH 秘密鍵
 
