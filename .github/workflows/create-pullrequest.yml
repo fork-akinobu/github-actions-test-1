@@ -30,8 +30,7 @@ jobs:
       - name: Copy changes from Repo A to Repo B
         run: |
           # リポジトリAのコードをリポジトリBにコピー
-          cp -r ../* .  # リポジトリAのファイルやディレクトリをリポジトリBにコピー
-          rm -rf ./github-actions-test-1  # 不要なディレクトリを削除してリポジトリBにコピー
+          find ../ -mindepth 1 -maxdepth 1 -not -name 'github-actions-test-1' -exec cp -r {} . \;
           # 変更をステージしてコミット
           git add .  # 変更されたファイルをステージ
           git commit -m "Sync changes from Repo A"  # コミットメッセージ
