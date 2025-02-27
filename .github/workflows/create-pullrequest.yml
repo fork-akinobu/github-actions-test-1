@@ -11,21 +11,19 @@ jobs:
 
     steps:
       - name: Check out the code from Repository A
-        uses: actions/checkout@v2  # リポジトリAのコードをチェックアウトする
+        uses: actions/checkout@v3  # リポジトリAのコードをチェックアウトする
 
       - name: Set up Git
         run: |
-          git config --global user.name "GitHub Actions"  # GitHub Actions用のユーザー名を設定
-          git config --global user.email "akinobu@fork.co.jp"  # GitHub Actions用のメールアドレスを設定
+          git config user.name "GitHub Actions"  # GitHub Actions用のユーザー名を設定
+          git config user.email "akinobu@fork.co.jp"  # GitHub Actions用のメールアドレスを設定
 
       - name: Clone Repo B
-        run: |
-          REPO_B="https://github.com/fork-akinobu/github-actions-test-2.git"  # リポジトリBのURLを指定
-          BRANCH_NAME="dev-digital-$(date +'%Y-%m-%d-%H%M')"  # 現在の日時を含むブランチ名を作成
-
-          git clone --single-branch --branch main $REPO_B repo-b  # リポジトリBの'上流'リポジトリをクローンし、'main'ブランチを指定
-          cd repo-b  # リポジトリBのディレクトリに移動
-          git checkout -b $BRANCH_NAME  # リポジトリBに新しいブランチを作成（現在の日時を含む）
+        uses: actions/checkout@v3
+        with:
+          repository: <リポジトリBのオーナー>/<リポジトリBの名前>
+          path: repositoryB
+          token: ${{ secrets.REPO_B_TOKEN }} # PAT または SSH 秘密鍵
 
       - name: Copy changes from Repo A to Repo B
         run: |
