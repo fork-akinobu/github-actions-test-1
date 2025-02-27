@@ -23,7 +23,7 @@ jobs:
         with:
           repository: fork-akinobu/github-actions-test-2
           path: repositoryB
-          token: ${{ secrets.REPO_B_TOKEN }} # PAT または SSH 秘密鍵
+          token: ${{ secrets.REPO_B_PAT }} # PAT または SSH 秘密鍵
 
       - name: Copy changes from Repo A to Repo B
         run: |
@@ -35,13 +35,13 @@ jobs:
 
       - name: Push changes to Repo B
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git # GitHubトークンを使ってリモートリポジトリBのURLを設定
+          git remote set-url origin https://x-access-token:${{ secrets.REPO_B_PAT }}@github.com/fork-akinobu/github-actions-test-2.git # GitHubトークンを使ってリモートリポジトリBのURLを設定
           git push origin $BRANCH_NAME  # リモートリポジトリBに新しいブランチをプッシュ
 
       - name: Create Pull Request in Repo B
         run: |
           PR_TITLE="Sync changes from Repo A - $BRANCH_NAME"  # プルリクエストのタイトルを設定
           PR_BODY="This is an automated pull request created from Repo A."  # プルリクエストの本文を設定
-          curl -X POST -H "Authorization: token ${{ secrets.REPO_B_TOKEN }}" \  # GitHub APIを呼び出して認証を行う
+          curl -X POST -H "Authorization: token ${{ secrets.REPO_B_PAT }}" \  # GitHub APIを呼び出して認証を行う
                -d '{"title":"'"$PR_TITLE"'","head":"'"$BRANCH_NAME"'","base":"main","body":"'"$PR_BODY"'"}' \  # プルリクエストの詳細情報（タイトル、ブランチ名、ベースブランチ、本文）を指定
                https://api.github.com/repos/fork-akinobu/github-actions-test-2/pulls  # リポジトリBにプルリクエストを作成
