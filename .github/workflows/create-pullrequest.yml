@@ -29,9 +29,11 @@ jobs:
 
       - name: Copy changes from Repo A to Repo B
         run: |
-          cp -r $GITHUB_WORKSPACE/* ./  # リポジトリAのコード（変更されたファイル）をリポジトリBのクローンにコピー
-          git add .  # コピーしたファイルをステージングエリアに追加
-          git commit -m "Sync from Repo A, branch: $BRANCH_NAME"  # コミットメッセージを指定してコミット
+          # リポジトリAの内容をリポジトリBにコピー
+          cp -r ../* .  # リポジトリAのファイルをリポジトリBにコピー
+          # コピー後、リポジトリBで変更をステージしてコミット
+          git add .  # 変更されたファイルをステージ
+          git commit -m "Copy changes from Repo A"  # コミット
 
       - name: Push changes to Repo B
         run: |
