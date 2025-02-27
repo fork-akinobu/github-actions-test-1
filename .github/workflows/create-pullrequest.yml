@@ -29,15 +29,15 @@ jobs:
 
       - name: Copy changes from Repo A to Repo B
         run: |
-          # リポジトリAの内容をリポジトリBにコピー
-          cp -r ../* .  # リポジトリAのファイルをリポジトリBにコピー
-          # コピー後、リポジトリBで変更をステージしてコミット
+          # リポジトリAのコードをリポジトリBにコピー
+          cp -r ../* .  # リポジトリAのコードをリポジトリBにコピー
+          # 変更をステージしてコミット
           git add .  # 変更されたファイルをステージ
-          git commit -m "Copy changes from Repo A"  # コミット
+          git commit -m "Sync changes from Repo A"  # コミットメッセージ
 
       - name: Push changes to Repo B
         run: |
-          git remote set-url origin https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git  # GitHubトークンを使ってリモートリポジトリBのURLを設定
+          #git remote set-url origin https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git  # GitHubトークンを使ってリモートリポジトリBのURLを設定
           git push origin $BRANCH_NAME  # リモートリポジトリBに新しいブランチをプッシュ
 
       - name: Create Pull Request in Repo B
