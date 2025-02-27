@@ -1,0 +1,47 @@
+name: Create Pull Request to Repo B
+
+on:
+  push:
+    branches:
+      - 'dev-digital'  # 'dev-digital'ブランチにpushがあった場合にトリガーする
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest  # ワークフローはUbuntuの最新バージョンで実行
+
+    steps:
+      - name: Check out the code from Repository A
+        uses: actions/checkout@v2  # リポジトリAのコードをチェックアウトする
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Actions"  # GitHub Actions用のユーザー名を設定
+          git config --global user.email "akinobu@fork.co.jp"  # GitHub Actions用のメールアドレスを設定
+
+      - name: Clone Repo B
+        run: |
+          REPO_B="https://github.com/fork-akinobu/github-actions-test-2.git"  # リポジトリBのURLを指定
+          BRANCH_NAME="dev-digital-$(date +'%Y-%m-%d-%H:%M:%S')"  # 現在の日時を含むブランチ名を作成
+
+          git clone --single-branch --branch main $REPO_B repo-b  # リポジトリBの'上流'リポジトリをクローンし、'main'ブランチを指定
+          cd repo-b  # リポジトリBのディレクトリに移動
+          git checkout -b $BRANCH_NAME  # リポジトリBに新しいブランチを作成（現在の日時を含む）
+
+      - name: Copy changes from Repo A to Repo B
+        run: |
+          cp -r ../* .  # リポジトリAのコード（変更されたファイル）をリポジトリBのクローンにコピー
+          git add .  # コピーしたファイルをステージングエリアに追加
+          git commit -m "Sync from Repo A, branch: $BRANCH_NAME"  # コミットメッセージを指定してコミット
+
+      - name: Push changes to Repo B
+        run: |
+          git remote set-url origin https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git  # GitHubトークンを使ってリモートリポジトリBのURLを設定
+          git push origin $BRANCH_NAME  # リモートリポジトリBに新しいブランチをプッシュ
+
+      - name: Create Pull Request in Repo B
+        run: |
+          PR_TITLE="Sync changes from Repo A - $BRANCH_NAME"  # プルリクエストのタイトルを設定
+          PR_BODY="This is an automated pull request created from Repo A."  # プルリクエストの本文を設定
+          curl -X POST -H "Authorization: token ${{ secrets.REPO_B_TOKEN }}" \  # GitHub APIを呼び出して認証を行う
+               -d '{"title":"'"$PR_TITLE"'","head":"'"$BRANCH_NAME"'","base":"main","body":"'"$PR_BODY"'"}' \  # プルリクエストの詳細情報（タイトル、ブランチ名、ベースブランチ、本文）を指定
+               https://api.github.com/repos/fork-akinobu/github-actions-test-2/pulls  # リポジトリBにプルリクエストを作成
