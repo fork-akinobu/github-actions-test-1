@@ -36,6 +36,11 @@ jobs:
           git add .
           git commit -m "Sync changes from Repo A"
 
+      - name: Debug Environment Variables
+        run: |
+          echo "REPO_B_TOKEN: ${{ secrets.REPO_B_TOKEN }}"
+          echo "BRANCH_NAME: ${{ env.BRANCH_NAME }}"
+
       - name: Push changes to Repo B
         run: |
           cd repositoryB # 作業ディレクトリを移動
