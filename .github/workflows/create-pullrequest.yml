@@ -21,6 +21,10 @@ jobs:
       - name: Set BRANCH_NAME
         run: echo "BRANCH_NAME=dev-digital-$(date +'%Y-%m-%d-%H-%M-%S')" >> $GITHUB_ENV
 
+      - name: Generate SSH key pair
+        run: |
+          ssh-keygen -t ed25519 -N "" -f repo_b_deploy_key
+
       - name: Clone Repo B
         uses: actions/checkout@v3
         with:
