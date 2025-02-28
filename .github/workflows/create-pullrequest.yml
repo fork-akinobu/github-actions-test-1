@@ -31,7 +31,7 @@ jobs:
       - name: Create Branch and Copy changes
         run: |
           cd repositoryB
-          git checkout -b ${{ env.BRANCH_NAME }}
+          #git checkout -b ${{ env.BRANCH_NAME }}
           find ../ -mindepth 1 -maxdepth 1 -not -name 'github-actions-test-1' -exec cp -r {} . \;
           git add .
           git commit -m "Sync changes from Repo A"
