@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Check out the code from Repository A
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 完全なクローン
 
       - name: Set up Git (Repository A)
         run: |
@@ -20,10 +22,6 @@ jobs:
 
       - name: Set BRANCH_NAME
         run: echo "BRANCH_NAME=dev-digital-$(date +'%Y-%m-%d-%H-%M-%S')" >> $GITHUB_ENV
-
-      - name: Generate SSH key pair
-        run: |
-          ssh-keygen -t ed25519 -N "" -f repo_b_deploy_key
 
       - name: Clone Repo B
         uses: actions/checkout@v3
@@ -35,43 +33,34 @@ jobs:
       - name: Create Branch and Copy changes (Repo B)
         run: |
           cd repositoryB
-          git config user.name "GitHub Actions Bot"  # 任意のユーザー名
-          git config user.email "akinobu@fork.co.jp"  # 任意のメールアドレス
+          git config user.name "GitHub Actions Bot"
+          git config user.email "akinobu@fork.co.jp"
           git checkout -b ${{ env.BRANCH_NAME }}
 
-          # --- デバッグ情報の追加 ---
+          # --- (前のステップからの修正・デバッグコード) ---
           echo "github.event.before: ${{ github.event.before }}"
           echo "github.sha: ${{ github.sha }}"
-          git log --oneline -n 5  # 直近の5コミットのログを表示（リポジトリA）
-          # --- デバッグ情報ここまで ---
+          git log --oneline -n 5  # 直近の5コミットのログを表示
 
-          # 変更されたファイルのリストを取得 (git diff)
           if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
             echo "Detected first push. Copying all files."
             CHANGED_FILES=$(git ls-tree -r HEAD --name-only --relative)
           else:
-            echo "Detected normal push. Calculating diff."
-            # --- より安全な git diff コマンド ---
-            # fetch --unshallow を実行 (必要に応じて)
-            git fetch --unshallow || true  # shallow clone の場合、履歴を完全にする
+            echo "Detected normal push.  Calculating diff."
+            git fetch --unshallow || true
             if git rev-parse --verify ${{ github.event.before }} > /dev/null 2>&1; then
-                # ${{ github.event.before }} が存在するコミットの場合
                 CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.before }} ${{ github.sha }} --relative)
             else
-                # ${{ github.event.before }} が存在しないコミットの場合（強制プッシュなど）
                 echo "Previous commit (${{ github.event.before }}) not found.  Getting diff from the merge-base."
-                # 共通の祖先からの差分を取得
                 CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT $(git merge-base ${{ github.event.before }} ${{ github.sha }}) ${{ github.sha }} --relative)
             fi
-            # --- より安全な git diff コマンド ここまで---
           fi
 
-          # 変更されたファイルのみを rsync でコピー（エラーハンドリング強化）
           if [ -n "$CHANGED_FILES" ]; then
             echo "Changed files:"
             echo "$CHANGED_FILES"
             echo "$CHANGED_FILES" | rsync -av --progress --files-from=- --from0 -R --exclude='.git' ../ ./
-            if [ $? -ne 0 ]; then  # rsync の終了コードをチェック
+            if [ $? -ne 0 ]; then
               echo "rsync failed with exit code $?"
               exit 1
             fi
@@ -79,43 +68,49 @@ jobs:
             echo "No changes detected."
             exit 0
           fi
+          # --- (前のステップからの修正・デバッグコード ここまで) ---
 
-          #find ../ -mindepth 1 -maxdepth 1 -not -name 'github-actions-test-1' -exec cp -r {} . \;
-          #rsync -av --progress --exclude='.git' ../ ./
+          # --- コミットが正しく行われたか確認 ---
+          if ! git diff --quiet HEAD; then # HEAD に変更があるか確認
+            git add .
+            git commit -m "Sync changes from Repo A"
+          else
+            echo "No changes to commit after rsync."
+            exit 0  # 変更がない場合はここで終了 (プルリクエストを作成しない)
+          fi
+          # --- コミット確認ここまで ---
 
-          git add .
-          git commit -m "Sync changes from Repo A"
 
-      - name: Debug Environment Variables
+      - name: Push changes to Repo B (with error handling)
         run: |
-          echo "REPO_B_TOKEN starts with: ${REPO_B_TOKEN:0:10}"
-          echo "REPO_B_TOKEN: ${{ secrets.REPO_B_TOKEN }}"
-          echo "BRANCH_NAME: ${{ env.BRANCH_NAME }}"
-
-      - name: Push changes to Repo B
-        run: |
-          cd repositoryB # リポジトリBのディレクトリに移動
-          git remote -v
-          git remote set-url origin https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git
-          git remote -v
+          cd repositoryB
+          git remote set-url origin "https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git"
           if git push origin ${{ env.BRANCH_NAME }}; then
             echo "Push successful!"
-          else
+          else:
             echo "Push failed!"
-            exit 1  # ワークフローを失敗させる
+            exit 1
           fi
 
-      - name: Create Pull Request in Repo B (using GitHub CLI)
+      - name: Create Pull Request in Repo B (using GitHub CLI and error handling)
         env:
           GH_TOKEN: ${{ secrets.REPO_B_TOKEN }}
         run: |
           cd repositoryB
-          gh pr create --base main --head ${{ env.BRANCH_NAME }} --title "Sync changes from Repo A - ${{ env.BRANCH_NAME }}" --body "This is an automated pull request created from Repo A."
 
-      # - name: Create Pull Request in Repo B
-      #   run: |
-      #     PR_TITLE="Sync changes from Repo A - ${{ env.BRANCH_NAME }}"
-      #     PR_BODY="This is an automated pull request created from Repo A."
-      #     curl -X POST -H "Authorization: token ${{ secrets.REPO_B_TOKEN }}" \
-      #          -d '{"title":"'"$PR_TITLE"'","head":"'${{ env.BRANCH_NAME }}'","base":"main","body":"'"$PR_BODY"'"}' \
-      #          https://api.github.com/repos/fork-akinobu/github-actions-test-2/pulls # api urlを修正
+          # mainブランチの存在確認
+          if git branch -r | grep -q "origin/main"; then # リモートにmainがあるか
+            echo "main branch exists."
+          else
+            echo "Error: main branch does not exist in Repo B."
+            exit 1 # main が存在しないのでエラー終了
+          fi
+
+          # --- プルリクエスト作成 (エラーハンドリング付き) ---
+          if gh pr create --base main --head ${{ env.BRANCH_NAME }} --title "Sync changes from Repo A - ${{ env.BRANCH_NAME }}" --body "This is an automated pull request created from Repo A."; then
+             echo "Pull request created successfully!"
+          else
+             echo "Pull request creation failed."
+             exit 1
+          fi
+          # --- プルリクエスト作成 ここまで ---
