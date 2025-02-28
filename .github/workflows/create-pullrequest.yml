@@ -45,7 +45,7 @@ jobs:
           if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
             echo "Detected first push. Copying all files."
             CHANGED_FILES=$(git ls-tree -r HEAD --name-only --relative)
-          else:
+          else
             echo "Detected normal push.  Calculating diff."
             git fetch --unshallow || true
             if git rev-parse --verify ${{ github.event.before }} > /dev/null 2>&1; then
@@ -87,7 +87,7 @@ jobs:
           git remote set-url origin "https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git"
           if git push origin ${{ env.BRANCH_NAME }}; then
             echo "Push successful!"
-          else:
+          else
             echo "Push failed!"
             exit 1
           fi
