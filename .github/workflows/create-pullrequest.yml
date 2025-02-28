@@ -12,8 +12,7 @@ jobs:
     steps:
       - name: Check out the code from Repository A
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # 完全な履歴をクローン
+        # fetch-depth はデフォルトのままでOK (この場合は shallow clone で問題ない)
 
       - name: Set up Git (Repository A)
         run: |
@@ -24,9 +23,9 @@ jobs:
         run: echo "BRANCH_NAME=dev-digital-$(date +'%Y-%m-%d-%H-%M-%S')" >> $GITHUB_ENV
 
       - name: Clone Repo B
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3  # actions/checkout に戻す
         with:
-          repository: fork-akinobu/github-actions-test-2
+          repository: xxx/github-actions-test-2
           path: repositoryB
           token: ${{ secrets.REPO_B_TOKEN }}
 
@@ -34,53 +33,18 @@ jobs:
         run: |
           cd repositoryB
           git config user.name "GitHub Actions Bot"
-          git config user.email "akinobu@fork.co.jp"
+          git config user.email "actions@github.com"
           git checkout -b ${{ env.BRANCH_NAME }}
 
-          # --- デバッグ出力 (必要に応じて) ---
-          echo "github.event.before: ${{ github.event.before }}"
-          echo "github.sha: ${{ github.sha }}"
-          # --- デバッグ出力ここまで ---
+          # --- find コマンドを使ったコピー (改善版) ---
+          # 1. .git ディレクトリを除外
+          # 2. リポジトリ A の名前のディレクトリも除外 (actions/checkout の仕様に対応)
+          # 3. -prune を使って効率的に除外
+          find ../ \( -name .git -o -name "${{ github.event.repository.name }}" \) -prune -o -print0 | cpio -pdm0 ./
+          # --- find コマンドここまで ---
 
-          # 変更されたファイルのリストを取得
-          if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
-            echo "Detected first push. Copying all files."
-            CHANGED_FILES=$(git ls-tree -r HEAD --name-only --relative)
-          else
-            echo "Detected normal push. Calculating diff."
-            # --- より安全な diff (github.event.before が存在しない場合) ---
-            if git rev-parse --verify ${{ github.event.before }} > /dev/null 2>&1; then
-                CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.before }} ${{ github.sha }} --relative)
-            else
-                echo "Previous commit (${{ github.event.before }}) not found. Getting diff from merge-base."
-                CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT $(git merge-base ${{ github.event.before }} ${{ github.sha }}) ${{ github.sha }} --relative)
-            fi
-            # --- より安全な diff ここまで ---
-          fi
-
-          # 変更されたファイルのみを rsync でコピー
-          if [ -n "$CHANGED_FILES" ]; then
-            echo "Changed files:"
-            echo "$CHANGED_FILES"
-            echo "$CHANGED_FILES" | rsync -av --progress --files-from=- --from0 -R --exclude='.git' ../ ./
-            if [ $? -ne 0 ]; then  # rsyncのエラーチェック
-              echo "rsync failed with exit code $?"
-              exit 1
-            fi
-          else
-            echo "No changes detected."
-            exit 0
-          fi
-
-          # --- コミットが正しく行われたか確認 ---
-          if ! git diff --quiet HEAD; then # HEAD に変更があるか確認
-            git add .
-            git commit -m "Sync changes from Repo A"
-          else
-            echo "No changes to commit after rsync."
-            exit 0  # 変更がない場合はここで終了 (プルリクエストを作成しない)
-          fi
-          # --- コミット確認ここまで ---
+          git add .
+          git commit -m "Sync changes from Repo A"
 
       - name: Push changes to Repo B (with error handling)
         run: |
@@ -88,7 +52,7 @@ jobs:
           git remote set-url origin "https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git"
           if git push origin ${{ env.BRANCH_NAME }}; then
             echo "Push successful!"
-          else
+          else:
             echo "Push failed!"
             exit 1
           fi
@@ -98,12 +62,12 @@ jobs:
           GH_TOKEN: ${{ secrets.REPO_B_TOKEN }}
         run: |
           cd repositoryB
-          # mainブランチの存在確認
-          if git branch -r | grep -q "origin/main"; then # リモートにmainがあるか
+
+          if git branch -r | grep -q "origin/main"; then
             echo "main branch exists."
-          else
+          else:
             echo "Error: main branch does not exist in Repo B."
-            exit 1 # main が存在しないのでエラー終了
+            exit 1
           fi
 
           if gh pr create --base main --head ${{ env.BRANCH_NAME }} --title "Sync changes from Repo A - ${{ env.BRANCH_NAME }}" --body "This is an automated pull request created from Repo A."; then
