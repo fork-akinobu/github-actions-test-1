@@ -13,7 +13,7 @@ jobs:
       - name: Check out the code from Repository A
         uses: actions/checkout@v3
 
-      - name: Set up Git
+      - name: Set up Git (Repository A)
         run: |
           git config user.name "fork-akinobu"
           git config user.email "akinobu@fork.co.jp"
@@ -32,11 +32,12 @@ jobs:
           path: repositoryB
           token: ${{ secrets.REPO_B_TOKEN }}
 
-      - name: Create Branch and Copy changes
+      - name: Create Branch and Copy changes (Repo B)
         run: |
           cd repositoryB
           git checkout -b ${{ env.BRANCH_NAME }}
-          find ../ -mindepth 1 -maxdepth 1 -not -name 'github-actions-test-1' -exec cp -r {} . \;
+          #find ../ -mindepth 1 -maxdepth 1 -not -name 'github-actions-test-1' -exec cp -r {} . \;
+          rsync -av --progress --exclude='.git' ../${{ github.event.repository.name }}/ ./
           git add .
           git commit -m "Sync changes from Repo A"
 
@@ -52,12 +53,24 @@ jobs:
           git remote -v
           git remote set-url origin https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git
           git remote -v
-          git push origin ${{ env.BRANCH_NAME }}
+          if git push origin ${{ env.BRANCH_NAME }}; then
+            echo "Push successful!"
+          else
+            echo "Push failed!"
+            exit 1  # ワークフローを失敗させる
+          fi
 
-      - name: Create Pull Request in Repo B
+      - name: Create Pull Request in Repo B (using GitHub CLI) # より良い方法
+        env:
+          GH_TOKEN: ${{ secrets.REPO_B_TOKEN }}  # GitHub CLI で使うトークンを設定
         run: |
-          PR_TITLE="Sync changes from Repo A - ${{ env.BRANCH_NAME }}"
-          PR_BODY="This is an automated pull request created from Repo A."
-          curl -X POST -H "Authorization: token ${{ secrets.REPO_B_TOKEN }}" \
-               -d '{"title":"'"$PR_TITLE"'","head":"'${{ env.BRANCH_NAME }}'","base":"main","body":"'"$PR_BODY"'"}' \
-               https://api.github.com/repos/fork-akinobu/github-actions-test-2/pulls # api urlを修正
+          cd repositoryB  # Repo B のディレクトリに移動
+          gh pr create --base main --head ${{ env.BRANCH_NAME }} --title "Sync changes from Repo A - ${{ env.BRANCH_NAME }}" --body "This is an automated pull request created from Repo A."
+
+      # - name: Create Pull Request in Repo B
+      #   run: |
+      #     PR_TITLE="Sync changes from Repo A - ${{ env.BRANCH_NAME }}"
+      #     PR_BODY="This is an automated pull request created from Repo A."
+      #     curl -X POST -H "Authorization: token ${{ secrets.REPO_B_TOKEN }}" \
+      #          -d '{"title":"'"$PR_TITLE"'","head":"'${{ env.BRANCH_NAME }}'","base":"main","body":"'"$PR_BODY"'"}' \
+      #          https://api.github.com/repos/fork-akinobu/github-actions-test-2/pulls # api urlを修正
