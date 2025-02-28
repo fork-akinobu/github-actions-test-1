@@ -105,11 +105,11 @@ jobs:
             exit 1  # ワークフローを失敗させる
           fi
 
-      - name: Create Pull Request in Repo B (using GitHub CLI) # より良い方法
+      - name: Create Pull Request in Repo B (using GitHub CLI)
         env:
-          GH_TOKEN: ${{ secrets.REPO_B_TOKEN }}  # GitHub CLI で使うトークンを設定
+          GH_TOKEN: ${{ secrets.REPO_B_TOKEN }}
         run: |
-          cd repositoryB  # Repo B のディレクトリに移動
+          cd repositoryB
           gh pr create --base main --head ${{ env.BRANCH_NAME }} --title "Sync changes from Repo A - ${{ env.BRANCH_NAME }}" --body "This is an automated pull request created from Repo A."
 
       # - name: Create Pull Request in Repo B
