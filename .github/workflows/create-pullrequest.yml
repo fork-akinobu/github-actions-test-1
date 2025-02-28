@@ -35,6 +35,8 @@ jobs:
       - name: Create Branch and Copy changes (Repo B)
         run: |
           cd repositoryB
+          git config user.name "GitHub Actions Bot"  # 任意のユーザー名
+          git config user.email "akinobu@fork.co.jp"  # 任意のメールアドレス
           git checkout -b ${{ env.BRANCH_NAME }}
           #find ../ -mindepth 1 -maxdepth 1 -not -name 'github-actions-test-1' -exec cp -r {} . \;
           rsync -av --progress --exclude='.git' ../ ./
