@@ -44,6 +44,7 @@ jobs:
       - name: Push changes to Repo B
         run: |
           cd repositoryB # 作業ディレクトリを移動
+          git remote -v #リモートURLの確認
           git remote set-url origin https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git
           git push origin ${{ env.BRANCH_NAME }}
 
