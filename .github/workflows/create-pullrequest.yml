@@ -38,8 +38,24 @@ jobs:
           git config user.name "GitHub Actions Bot"  # 任意のユーザー名
           git config user.email "akinobu@fork.co.jp"  # 任意のメールアドレス
           git checkout -b ${{ env.BRANCH_NAME }}
+
+          # 変更されたファイルのリストを取得 (git diff)
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.before }} ${{ github.sha }} --relative)
+
+          # 変更されたファイルのみを rsync でコピー
+          if [ -n "$CHANGED_FILES" ]; then  # 変更されたファイルがある場合のみ実行
+            # --files-from=- で標準入力からファイルリストを読み込む
+            # echo "$CHANGED_FILES" でファイルリストを標準入力に渡す
+            # --from0 で NUL 文字区切りのファイルリストを扱う (ファイル名に空白などを含む場合のため)
+            echo "$CHANGED_FILES" | rsync -av --progress --files-from=- --from0 -R --exclude='.git' ../ ./
+          else
+             echo "No changes detected." #変更がなかったときの処理
+             exit 0 #正常終了させる
+          fi
+
           #find ../ -mindepth 1 -maxdepth 1 -not -name 'github-actions-test-1' -exec cp -r {} . \;
-          rsync -av --progress --exclude='.git' ../ ./
+          #rsync -av --progress --exclude='.git' ../ ./
+
           git add .
           git commit -m "Sync changes from Repo A"
 
