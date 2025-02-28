@@ -3,20 +3,20 @@ name: Create Pull Request to Repo B
 on:
   push:
     branches:
-      - 'dev-digital'  # 'dev-digital'ブランチにpushがあった場合にトリガーする
+      - 'dev-digital'
 
 jobs:
   create-pr:
-    runs-on: ubuntu-latest  # ワークフローはUbuntuの最新バージョンで実行
+    runs-on: ubuntu-latest
 
     steps:
       - name: Check out the code from Repository A
-        uses: actions/checkout@v3  # リポジトリAのコードをチェックアウトする
+        uses: actions/checkout@v3
 
       - name: Set up Git
         run: |
-          git config user.name "fork-akinobu"  # GitHub Actions用のユーザー名を設定
-          git config user.email "akinobu@fork.co.jp"  # GitHub Actions用のメールアドレスを設定
+          git config user.name "fork-akinobu"
+          git config user.email "akinobu@fork.co.jp"
 
       - name: Set BRANCH_NAME
         run: echo "BRANCH_NAME=dev-digital-$(date +'%Y-%m-%d-%H-%M-%S')" >> $GITHUB_ENV
@@ -26,35 +26,25 @@ jobs:
         with:
           repository: fork-akinobu/github-actions-test-2
           path: repositoryB
-          token: ${{ secrets.REPO_B_TOKEN }} # PAT または SSH 秘密鍵
-          #ref: ${{ env.BRANCH_NAME }}
+          token: ${{ secrets.REPO_B_TOKEN }}
 
-      - name: Create Branch
+      - name: Create Branch and Copy changes
         run: |
           cd repositoryB
           git checkout -b ${{ env.BRANCH_NAME }}
-
-
-      - name: Copy changes from Repo A to Repo B
-        run: |
-          # リポジトリAのコードをリポジトリBにコピー
           find ../ -mindepth 1 -maxdepth 1 -not -name 'github-actions-test-1' -exec cp -r {} . \;
-          # 変更をステージしてコミット
-          git add .  # 変更されたファイルをステージ
-          git commit -m "Sync changes from Repo A"  # コミットメッセージ
-
-      # - name: Set BRANCH_NAME
-      #   run: echo "BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+          git add .
+          git commit -m "Sync changes from Repo A"
 
       - name: Push changes to Repo B
         run: |
           git remote set-url origin https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git
-          git push origin $BRANCH_NAME
+          git push origin ${{ env.BRANCH_NAME }} # env.BRANCH_NAMEを使用
 
       - name: Create Pull Request in Repo B
         run: |
-          PR_TITLE="Sync changes from Repo A - $BRANCH_NAME"  # プルリクエストのタイトルを設定
-          PR_BODY="This is an automated pull request created from Repo A."  # プルリクエストの本文を設定
-          curl -X POST -H "Authorization: token ${{ secrets.REPO_B_TOKEN }}" \  # GitHub APIを呼び出して認証を行う
-               -d '{"title":"'"$PR_TITLE"'","head":"'"$BRANCH_NAME"'","base":"main","body":"'"$PR_BODY"'"}' \  # プルリクエストの詳細情報（タイトル、ブランチ名、ベースブランチ、本文）を指定
-               https://api.github.com/repos/fork-akinobu/github-actions-test-2/pulls  # リポジトリBにプルリクエストを作成
+          PR_TITLE="Sync changes from Repo A - ${{ env.BRANCH_NAME }}"
+          PR_BODY="This is an automated pull request created from Repo A."
+          curl -X POST -H "Authorization: token ${{ secrets.REPO_B_TOKEN }}" \
+               -d '{"title":"'"$PR_TITLE"'","head":"'${{ env.BRANCH_NAME }}'","base":"main","body":"'"$PR_BODY"'"}' \
+               https://api.github.com/repos/fork-akinobu/github-actions-test-2/pulls # api urlを修正
