@@ -40,7 +40,7 @@ jobs:
           # 1. .git ディレクトリを除外
           # 2. リポジトリ A の名前のディレクトリも除外 (actions/checkout の仕様に対応)
           # 3. -prune を使って効率的に除外
-          find ../ \( -name .git -o -name "${{ github.event.repository.name }}" \) -prune -o -printf '%P\0' | cpio -pdmu0 ./
+          find ../${{ github.event.repository.name }} \( -name .git -o -name "${{ github.event.repository.name }}" \) -prune -o -printf '%p\0' | cpio -pdmu0 ./
           # --- find コマンドここまで ---
 
           git add .
