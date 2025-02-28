@@ -24,6 +24,8 @@ jobs:
           repository: fork-akinobu/github-actions-test-2
           path: repositoryB
           token: ${{ secrets.REPO_B_TOKEN }} # PAT または SSH 秘密鍵
+          BRANCH_NAME="dev-digital-$(date +'%Y-%m-%d-%H-%M-%S')"  # 現在の日時を含むブランチ名を作成
+
 
       - name: Copy changes from Repo A to Repo B
         run: |
@@ -32,6 +34,9 @@ jobs:
           # 変更をステージしてコミット
           git add .  # 変更されたファイルをステージ
           git commit -m "Sync changes from Repo A"  # コミットメッセージ
+
+      # - name: Set BRANCH_NAME
+      #   run: echo "BRANCH_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
 
       - name: Push changes to Repo B
         run: |
