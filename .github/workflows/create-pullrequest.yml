@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Check out the code from Repository A
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
 
       - name: Set up Git
         run: |
@@ -22,7 +22,7 @@ jobs:
         run: echo "BRANCH_NAME=dev-digital-$(date +'%Y-%m-%d-%H-%M-%S')" >> $GITHUB_ENV
 
       - name: Clone Repo B
-        uses: actions/checkout@v3
+        uses: actions/checkout@v2
         with:
           repository: fork-akinobu/github-actions-test-2
           path: repositoryB
