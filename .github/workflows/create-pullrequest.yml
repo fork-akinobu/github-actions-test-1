@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Check out the code from Repository A
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Git
         run: |
@@ -22,7 +22,7 @@ jobs:
         run: echo "BRANCH_NAME=dev-digital-$(date +'%Y-%m-%d-%H-%M-%S')" >> $GITHUB_ENV
 
       - name: Clone Repo B
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: fork-akinobu/github-actions-test-2
           path: repositoryB
@@ -43,8 +43,9 @@ jobs:
 
       - name: Push changes to Repo B
         run: |
+          git remote -v #リモートURLの確認01
           cd repositoryB # 作業ディレクトリを移動
-          git remote -v #リモートURLの確認
+          git remote -v #リモートURLの確認02
           git remote set-url origin https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git
           git push origin ${{ env.BRANCH_NAME }}
 
