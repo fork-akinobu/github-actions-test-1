@@ -18,13 +18,16 @@ jobs:
           git config user.name "fork-akinobu"  # GitHub Actions用のユーザー名を設定
           git config user.email "akinobu@fork.co.jp"  # GitHub Actions用のメールアドレスを設定
 
+      - name: Set BRANCH_NAME
+        run: echo "BRANCH_NAME=dev-digital-$(date +'%Y-%m-%d-%H-%M-%S')" >> $GITHUB_ENV
+
       - name: Clone Repo B
         uses: actions/checkout@v3
         with:
           repository: fork-akinobu/github-actions-test-2
           path: repositoryB
           token: ${{ secrets.REPO_B_TOKEN }} # PAT または SSH 秘密鍵
-          BRANCH_NAME="dev-digital-$(date +'%Y-%m-%d-%H-%M-%S')"  # 現在の日時を含むブランチ名を作成
+          ref: ${{ env.BRANCH_NAME }}
 
 
       - name: Copy changes from Repo A to Repo B
