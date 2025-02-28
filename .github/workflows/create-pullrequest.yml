@@ -40,7 +40,14 @@ jobs:
           git checkout -b ${{ env.BRANCH_NAME }}
 
           # 変更されたファイルのリストを取得 (git diff)
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.before }} ${{ github.sha }} --relative)
+          # 最初のプッシュかどうかをチェック
+          if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
+            # 最初のプッシュの場合、すべてのファイルを対象とする
+            CHANGED_FILES=$(git ls-tree -r HEAD --name-only --relative)
+          else
+            # 最初のプッシュでない場合、通常の diff を実行
+            CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.before }} ${{ github.sha }} --relative)
+          fi
 
           # 変更されたファイルのみを rsync でコピー
           if [ -n "$CHANGED_FILES" ]; then  # 変更されたファイルがある場合のみ実行
