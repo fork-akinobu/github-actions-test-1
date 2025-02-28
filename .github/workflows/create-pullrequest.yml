@@ -36,12 +36,7 @@ jobs:
           git config user.email "actions@github.com"
           git checkout -b ${{ env.BRANCH_NAME }}
 
-          # --- find コマンドを使ったコピー (改善版) ---
-          # 1. .git ディレクトリを除外
-          # 2. リポジトリ A の名前のディレクトリも除外 (actions/checkout の仕様に対応)
-          # 3. -prune を使って効率的に除外
-          find ../ -name .git -prune -o -path ../${{ github.event.repository.name }} -prune -o -print0 | cpio -pdm0 ./
-          # --- find コマンドここまで ---
+          rsync -av --delete --exclude='.git' ../${{ github.event.repository.name }}/ ./
 
           git add .
           git commit -m "Sync changes from Repo A"
