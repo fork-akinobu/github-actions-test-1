@@ -29,6 +29,11 @@ jobs:
           token: ${{ secrets.REPO_B_TOKEN }} # PAT または SSH 秘密鍵
           #ref: ${{ env.BRANCH_NAME }}
 
+      - name: Create Branch
+        run: |
+          cd repositoryB
+          git checkout -b ${{ env.BRANCH_NAME }}
+
 
       - name: Copy changes from Repo A to Repo B
         run: |
