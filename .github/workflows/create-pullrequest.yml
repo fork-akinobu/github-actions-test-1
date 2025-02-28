@@ -38,6 +38,7 @@ jobs:
 
       - name: Debug Environment Variables
         run: |
+          echo "REPO_B_TOKEN starts with: ${REPO_B_TOKEN:0:10}"
           echo "REPO_B_TOKEN: ${{ secrets.REPO_B_TOKEN }}"
           echo "BRANCH_NAME: ${{ env.BRANCH_NAME }}"
 
