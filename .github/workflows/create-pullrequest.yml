@@ -39,25 +39,45 @@ jobs:
           git config user.email "akinobu@fork.co.jp"  # 任意のメールアドレス
           git checkout -b ${{ env.BRANCH_NAME }}
 
+          # --- デバッグ情報の追加 ---
+          echo "github.event.before: ${{ github.event.before }}"
+          echo "github.sha: ${{ github.sha }}"
+          git log --oneline -n 5  # 直近の5コミットのログを表示（リポジトリA）
+          # --- デバッグ情報ここまで ---
+
           # 変更されたファイルのリストを取得 (git diff)
-          # 最初のプッシュかどうかをチェック
           if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
-            # 最初のプッシュの場合、すべてのファイルを対象とする
+            echo "Detected first push. Copying all files."
             CHANGED_FILES=$(git ls-tree -r HEAD --name-only --relative)
-          else
-            # 最初のプッシュでない場合、通常の diff を実行
-            CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.before }} ${{ github.sha }} --relative)
+          else:
+            echo "Detected normal push. Calculating diff."
+            # --- より安全な git diff コマンド ---
+            # fetch --unshallow を実行 (必要に応じて)
+            git fetch --unshallow || true  # shallow clone の場合、履歴を完全にする
+            if git rev-parse --verify ${{ github.event.before }} > /dev/null 2>&1; then
+                # ${{ github.event.before }} が存在するコミットの場合
+                CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.before }} ${{ github.sha }} --relative)
+            else
+                # ${{ github.event.before }} が存在しないコミットの場合（強制プッシュなど）
+                echo "Previous commit (${{ github.event.before }}) not found.  Getting diff from the merge-base."
+                # 共通の祖先からの差分を取得
+                CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT $(git merge-base ${{ github.event.before }} ${{ github.sha }}) ${{ github.sha }} --relative)
+            fi
+            # --- より安全な git diff コマンド ここまで---
           fi
 
-          # 変更されたファイルのみを rsync でコピー
-          if [ -n "$CHANGED_FILES" ]; then  # 変更されたファイルがある場合のみ実行
-            # --files-from=- で標準入力からファイルリストを読み込む
-            # echo "$CHANGED_FILES" でファイルリストを標準入力に渡す
-            # --from0 で NUL 文字区切りのファイルリストを扱う (ファイル名に空白などを含む場合のため)
+          # 変更されたファイルのみを rsync でコピー（エラーハンドリング強化）
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "Changed files:"
+            echo "$CHANGED_FILES"
             echo "$CHANGED_FILES" | rsync -av --progress --files-from=- --from0 -R --exclude='.git' ../ ./
+            if [ $? -ne 0 ]; then  # rsync の終了コードをチェック
+              echo "rsync failed with exit code $?"
+              exit 1
+            fi
           else
-             echo "No changes detected." #変更がなかったときの処理
-             exit 0 #正常終了させる
+            echo "No changes detected."
+            exit 0
           fi
 
           #find ../ -mindepth 1 -maxdepth 1 -not -name 'github-actions-test-1' -exec cp -r {} . \;
