@@ -47,7 +47,7 @@ jobs:
           git remote set-url origin "https://x-access-token:${{ secrets.REPO_B_TOKEN }}@github.com/fork-akinobu/github-actions-test-2.git"
           if git push origin ${{ env.BRANCH_NAME }}; then
             echo "Push successful!"
-          else:
+          else
             echo "Push failed!"
             exit 1
           fi
@@ -60,7 +60,7 @@ jobs:
 
           if git branch -r | grep -q "origin/main"; then
             echo "main branch exists."
-          else:
+          else
             echo "Error: main branch does not exist in Repo B."
             exit 1
           fi
