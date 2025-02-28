@@ -13,7 +13,7 @@ jobs:
       - name: Check out the code from Repository A
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # 完全なクローン
+          fetch-depth: 0  # 完全な履歴をクローン
 
       - name: Set up Git (Repository A)
         run: |
@@ -37,30 +37,33 @@ jobs:
           git config user.email "akinobu@fork.co.jp"
           git checkout -b ${{ env.BRANCH_NAME }}
 
-          # --- (前のステップからの修正・デバッグコード) ---
+          # --- デバッグ出力 (必要に応じて) ---
           echo "github.event.before: ${{ github.event.before }}"
           echo "github.sha: ${{ github.sha }}"
-          git log --oneline -n 5  # 直近の5コミットのログを表示
+          # --- デバッグ出力ここまで ---
 
+          # 変更されたファイルのリストを取得
           if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
             echo "Detected first push. Copying all files."
             CHANGED_FILES=$(git ls-tree -r HEAD --name-only --relative)
           else
-            echo "Detected normal push.  Calculating diff."
-            git fetch --unshallow || true
+            echo "Detected normal push. Calculating diff."
+            # --- より安全な diff (github.event.before が存在しない場合) ---
             if git rev-parse --verify ${{ github.event.before }} > /dev/null 2>&1; then
                 CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.before }} ${{ github.sha }} --relative)
             else
-                echo "Previous commit (${{ github.event.before }}) not found.  Getting diff from the merge-base."
+                echo "Previous commit (${{ github.event.before }}) not found. Getting diff from merge-base."
                 CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRT $(git merge-base ${{ github.event.before }} ${{ github.sha }}) ${{ github.sha }} --relative)
             fi
+            # --- より安全な diff ここまで ---
           fi
 
+          # 変更されたファイルのみを rsync でコピー
           if [ -n "$CHANGED_FILES" ]; then
             echo "Changed files:"
             echo "$CHANGED_FILES"
             echo "$CHANGED_FILES" | rsync -av --progress --files-from=- --from0 -R --exclude='.git' ../ ./
-            if [ $? -ne 0 ]; then
+            if [ $? -ne 0 ]; then  # rsyncのエラーチェック
               echo "rsync failed with exit code $?"
               exit 1
             fi
@@ -68,7 +71,6 @@ jobs:
             echo "No changes detected."
             exit 0
           fi
-          # --- (前のステップからの修正・デバッグコード ここまで) ---
 
           # --- コミットが正しく行われたか確認 ---
           if ! git diff --quiet HEAD; then # HEAD に変更があるか確認
@@ -79,7 +81,6 @@ jobs:
             exit 0  # 変更がない場合はここで終了 (プルリクエストを作成しない)
           fi
           # --- コミット確認ここまで ---
-
 
       - name: Push changes to Repo B (with error handling)
         run: |
@@ -97,7 +98,6 @@ jobs:
           GH_TOKEN: ${{ secrets.REPO_B_TOKEN }}
         run: |
           cd repositoryB
-
           # mainブランチの存在確認
           if git branch -r | grep -q "origin/main"; then # リモートにmainがあるか
             echo "main branch exists."
@@ -106,11 +106,9 @@ jobs:
             exit 1 # main が存在しないのでエラー終了
           fi
 
-          # --- プルリクエスト作成 (エラーハンドリング付き) ---
           if gh pr create --base main --head ${{ env.BRANCH_NAME }} --title "Sync changes from Repo A - ${{ env.BRANCH_NAME }}" --body "This is an automated pull request created from Repo A."; then
              echo "Pull request created successfully!"
           else
              echo "Pull request creation failed."
              exit 1
           fi
-          # --- プルリクエスト作成 ここまで ---
