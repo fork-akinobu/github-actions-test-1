@@ -35,9 +35,9 @@ jobs:
           git config user.email "actions@github.com"
           git checkout -b ${{ env.BRANCH_NAME }}
 
-          rsync -av --delete --exclude='.git' --exclude='.github/workflows' --exclude='README.md' --exclude='.gitignore' --exclude='repositoryB' ../../${{ github.event.repository.name }}/ ./ #.github/workflows repositoryB README.md .gitignoreを除外
+          rsync -av --exclude='.git' --exclude='.github/workflows' --exclude='README.md' --exclude='.gitignore' --exclude='repositoryB' ../../${{ github.event.repository.name }}/ ./ #.github/workflows repositoryB README.md .gitignoreを除外
 
-          git add .
+          git add -u
           git commit -m "Sync changes from Repo A"
 
       - name: Push changes to Repo B (with error handling)
