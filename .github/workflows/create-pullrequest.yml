@@ -58,14 +58,14 @@ jobs:
         run: |
           cd repositoryB
 
-          if git branch -r | grep -q "origin/main"; then
-            echo "main branch exists."
+          if git branch -r | grep -q "origin/dev-digital"; then
+            echo "dev-digital branch exists."
           else
-            echo "Error: main branch does not exist in Repo B."
+            echo "Error: dev-digital branch does not exist in Repo B."
             exit 1
           fi
 
-          if gh pr create --base main --head ${{ env.BRANCH_NAME }} --title "Sync changes from Repo A - ${{ env.BRANCH_NAME }}" --body "This is an automated pull request created from Repo A."; then
+          if gh pr create --base dev-digital --head ${{ env.BRANCH_NAME }} --title "Sync changes from Repo A - ${{ env.BRANCH_NAME }}" --body "This is an automated pull request created from Repo A."; then
              echo "Pull request created successfully!"
           else
              echo "Pull request creation failed."
