@@ -21,7 +21,9 @@ jobs:
           export TZ=Asia/Tokyo
 
       - name: Set BRANCH_NAME
-        run: echo "BRANCH_NAME=dev-digital-$(date +'%Y-%m-%d-%H-%M-%S')" >> $GITHUB_ENV
+        run: |
+          export TZ=Asia/Tokyo
+          echo "BRANCH_NAME=dev-digital-$(date +'%Y-%m-%d-%H-%M-%S')" >> $GITHUB_ENV
 
       - name: Clone Repo B
         uses: actions/checkout@v3  # actions/checkout に戻す
