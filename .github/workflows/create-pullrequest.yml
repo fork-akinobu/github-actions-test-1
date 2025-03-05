@@ -31,6 +31,7 @@ jobs:
           repository: fork-akinobu/github-actions-test-2
           path: repositoryB
           token: ${{ secrets.REPO_B_TOKEN }}
+          ref: dev-digital
 
       - name: Create Branch and Copy changes (Repo B)
         run: |
