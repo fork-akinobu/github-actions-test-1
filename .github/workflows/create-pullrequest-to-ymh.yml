@@ -17,8 +17,6 @@ jobs:
         run: |
           git config user.name "fork-akinobu"
           git config user.email "akinobu@fork.co.jp"
-          
-
 
       - name: Set BRANCH_NAME
         run: |
@@ -31,6 +29,7 @@ jobs:
           repository: YMEH-system/sandbox1
           path: repositoryB
           token: ${{ secrets.REPO_SAND_TOKEN }}
+          ref: dev-digital
 
       - name: Create Branch and Copy changes (Repo B)
         run: |
@@ -39,7 +38,7 @@ jobs:
           git config user.email "actions@github.com"
           git checkout -b ${{ env.BRANCH_NAME }}
 
-          # rsync -av --delete --exclude='.git' --exclude='.github/workflows' --exclude='README.md' --exclude='.gitignore' --exclude='repositoryB' ../../${{ github.event.repository.name }}/ ./ #.github/workflows repositoryB README.md .gitignoreを除外
+          rsync -av --delete --exclude='.git' --exclude='.github/workflows' --exclude='README.md' --exclude='.gitignore' --exclude='repositoryB' ../../${{ github.event.repository.name }}/ ./ #.github/workflows repositoryB README.md .gitignoreを除外
 
           git add -A
           git commit -m "Sync changes from Repo A"
